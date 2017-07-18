@@ -8,11 +8,18 @@ if [ "$1" = "clean" ]; then
     echo "Clean done";
 else 
     javac Set1Chapter1.java;
+    javac Set1Chapter2.java;
     javac BasicCrypto.java;
     echo "Build done";
 fi
 
-if [ "$1" ]; then
-    echo "Running..."
-    java Set1Chapter1;
+if [ "$1" = "run" ]; then
+    echo "Running...";
+    if [ "$2" = "1" ]; then
+        if [ "$3" = "1" ]; then
+            java Set1Chapter1;
+        elif [ "$3" = "2" ]; then
+            java Set1Chapter2;
+        fi
+    fi
 fi
