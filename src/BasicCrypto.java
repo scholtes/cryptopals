@@ -4,15 +4,26 @@
 import java.math.BigInteger;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Arrays;
 import java.io.UnsupportedEncodingException;
 import java.lang.Math;
 
 public class BasicCrypto {
 
+    // Data found from Googling around various sources
     static final int ALPHA_SIZE = 26;
     static final int LETTER_A = (int)('A');
     static final double AVG_WORD_SIZE = 5.1; // Number of letters per avg english word
     static final double[] FREQUENCIES_EN = {8.167,1.492,2.782,4.253,12.702,2.228,2.015,6.094,6.966,0.153,0.772,4.025,2.406,6.749,7.507,1.929,0.095,5.987,6.327,9.056,2.758,0.978,2.360,0.150,1.974,0.074};
+
+    // These are rather arbitrary
+    // Smallest key size to guess and test
+    static final int MIN_KEY_SIZE = 1;
+    // Largest key size to guess and test
+    static final int MAX_KEY_SIZE = 50;
+    // Number of sample block pairs to compare
+    static final int BLOCK_SAMPLES = 20;
+
 
     public static String bigInt2base64(BigInteger bigInt) {
         return new String(Base64.getEncoder().encode(bigInt.toByteArray()));
@@ -159,5 +170,57 @@ public class BasicCrypto {
         return score;
     }
 
+    // Compute number of differing bits between two char arrays
+    // They are assumed to be equal length
+    public static int hamming(char[] string1, char[] string2) {
+        assert string1.length == string2.length;
+        int bitCount = 0;
+        for(int i = 0; i < string1.length; i++) {
+            bitCount += Integer.bitCount(string1[i] ^ string2[i]);
+        }
+        return bitCount;
+    }
 
+    // Use hamming distance to guess what the probable key size is
+    // for a given cihpertext that was known to be made with a repeated key
+    public static int autoGetKeySize(char[] ascii) {
+        assert MAX_KEY_SIZE*BLOCK_SAMPLES <= ascii.length;
+
+        double best_norm_hamming = 8.0;
+        int best_key_length = 0;
+
+        double norm_hamming;
+        for (int key_length = MIN_KEY_SIZE; key_length <= MAX_KEY_SIZE; key_length++) {
+            norm_hamming = 0;
+            for (int i = 0; i < BLOCK_SAMPLES; i++) {
+                norm_hamming += hamming(
+                        Arrays.copyOfRange(ascii, 2*i*key_length, (2*i+1)*key_length),
+                        Arrays.copyOfRange(ascii, (2*i+1)*key_length, 2*(i+1)*key_length)
+                        );
+            }
+            norm_hamming /= (BLOCK_SAMPLES * key_length);
+            if (best_norm_hamming > norm_hamming) { 
+                best_norm_hamming = norm_hamming;
+                best_key_length = key_length;
+            }
+        }
+
+        return best_key_length;
+    }
+
+    // Given a probable key size and cipher text, break the ciphertext using frequency analysis (using
+    // the same function created above)
+    public static String autoGuessRepeatedKey(char[] ascii, int keySize) throws Exception {
+        char[] keystring = new char[keySize];
+        for (int offset = 0; offset < keySize; offset++) {
+            char[] transpose = new char[(ascii.length-offset)/keySize];
+            // Copy every keSize'th character into a new string
+            for(int i = 0; i < transpose.length; i++) {
+                transpose[i] = ascii[keySize*i + offset];
+            }
+            // Guess another key character
+            keystring[offset] = autoGetKey(ascii2hex(new String(transpose)));
+        }
+        return new String(keystring);
+    }
 }
