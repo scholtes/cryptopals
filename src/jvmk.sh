@@ -11,6 +11,7 @@ else
     javac Set1Chapter2.java;
     javac Set1Chapter3.java;
     javac Set1Chapter4.java;
+    javac Set1Chapter5.java;
     javac BasicCrypto.java;
     echo "Build done";
 fi
@@ -26,6 +27,8 @@ if [ "$1" = "run" ]; then
             java Set1Chapter3;
         elif [ "$3" = "4" ]; then   
             java Set1Chapter4;
+        elif [ "$3" = "5" ]; then       
+            java Set1Chapter5;
         fi
     fi
 fi

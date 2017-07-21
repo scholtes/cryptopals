@@ -76,6 +76,25 @@ public class BasicCrypto {
         return xor(repeatedKey, hexPlaintext);
     }
 
+    // Using a repeating key 'key', xor it with the plaintext and return the hex encoded representation
+    public static String encryptRepeatingXor(String asciiPlaintext, String keyString) throws Exception {
+        char[] plaintext = asciiPlaintext.toCharArray();
+        char[] key = keyString.toCharArray();
+        char[] ciphertext = new char[plaintext.length];
+        for(int i = 0; i < plaintext.length; i++) { 
+            ciphertext[i] = (char)(plaintext[i] ^ key[i % key.length]);
+        }
+        return ascii2hex(new String(ciphertext));
+    }
+
+    // Using a repeating key 'key', xor it with the plaintext and return the ascii encoded representation
+    // (basically the same as encryptSingleByteXor, with the exception of the hex/ascii business... in fact
+    // this is just a wrapper function of that one.  Probably less efficient that way, but more readable
+    // and less repetitive).
+    public static String decryptRepeatingXor(String hexCipher, String keystring) throws Exception {
+        return hex2ascii(encryptRepeatingXor(hex2ascii(hexCipher), keystring));
+    }
+
     // Attempts to find the most likely key based on character frequency analysis on the English alphabet
     public static char autoGetKey(String hexCipher) throws Exception {
         double best_score = (double) ALPHA_SIZE;
