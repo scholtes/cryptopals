@@ -77,36 +77,43 @@ public class BasicCrypto {
 
     // Attempts to find the most likely key based on character frequency analysis on the English alphabet
     public static char autoGetKey(String hexCipher) throws Exception {
-        double[] frequencies = new double[ALPHA_SIZE];
-        char[] plaintext;
         double best_score = (double) ALPHA_SIZE;
         char best_key = (char) 0;
         double score;
         double norm;
         for(int i = 0; i < 0x100; i++) {
-            score = 0;
-            norm = 0.0000001;
-            plaintext = decryptSingleByteXor(hexCipher, (char)(i)).toUpperCase().toCharArray();
-            frequencies = new double[ALPHA_SIZE];
-            //System.out.println(plaintext);
-            for(int k = 0; k < plaintext.length; k++) {
-                if ((LETTER_A <= (int)plaintext[k]) && ((int)plaintext[k] < LETTER_A + ALPHA_SIZE)) {
-                    frequencies[(int)plaintext[k] - LETTER_A]++;
-                }
-            }
-            for(int k = 0; k < ALPHA_SIZE; k++) {
-                norm += frequencies[k];
-            }
-            for(int k = 0; k < ALPHA_SIZE; k++) {
-                score += Math.abs(frequencies[k]/norm - FREQUENCIES_EN[k]/100);
-            }
-            //System.out.println("" + Integer.toString(i, 16) + " : " +  plaintext.length + " : " + score);
+            score = getEnglishMetric(decryptSingleByteXor(hexCipher, (char)(i)));
             if (best_score > score) {
                 best_score = score;
                 best_key = (char)(i);
             }
         }
         return best_key;
+    }
+
+    // Given ascii text, return a metric that estimates the distance of that text 
+    // from the English language.
+    // In it's current implementation, this is simply based on letter frequencies.
+    // Smaller number means more like English.
+    public static double getEnglishMetric(String asciiText) {
+        double[] frequencies = new double[ALPHA_SIZE];
+        double score = 0;
+        // A botched way to avoid dividing by zero.
+        // This is okay because any strings containing no english letters will have a large (poorer) score
+        double norm = 0.0000001;
+        char[] plaintext = asciiText.toUpperCase().toCharArray();
+        for(int k = 0; k < plaintext.length; k++) {
+            if ((LETTER_A <= (int)plaintext[k]) && ((int)plaintext[k] < LETTER_A + ALPHA_SIZE)) {
+                frequencies[(int)plaintext[k] - LETTER_A]++;
+            }
+        }
+        for(int k = 0; k < ALPHA_SIZE; k++) {
+            norm += frequencies[k];
+        }
+        for(int k = 0; k < ALPHA_SIZE; k++) {
+            score += Math.abs(frequencies[k]/norm - FREQUENCIES_EN[k]/100);
+        }
+        return score;
     }
 
 
