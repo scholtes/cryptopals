@@ -8,12 +8,15 @@ public class Set1Chapter3 {
 
     public static void main(String[] args) throws Exception {
         challengeTest();
+        hobbitTest();
     }
 
     public static void challengeTest() throws Exception {
         String input = new String("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736");
         char guessedKey = BasicCrypto.autoGetKey(input);
         String plaintext = BasicCrypto.decryptSingleByteXor(input, guessedKey);
+        System.out.println(BasicCrypto.getEnglishMetric(plaintext));
+        System.out.println("" + guessedKey + " (0x" + String.format("%02X", (int)(guessedKey)) + ")");
         System.out.println(input);
         System.out.println(plaintext);
     }

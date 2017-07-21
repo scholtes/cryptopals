@@ -11,6 +11,7 @@ public class BasicCrypto {
 
     static final int ALPHA_SIZE = 26;
     static final int LETTER_A = (int)('A');
+    static final double AVG_WORD_SIZE = 5.1; // Number of letters per avg english word
     static final double[] FREQUENCIES_EN = {8.167,1.492,2.782,4.253,12.702,2.228,2.015,6.094,6.966,0.153,0.772,4.025,2.406,6.749,7.507,1.929,0.095,5.987,6.327,9.056,2.758,0.978,2.360,0.150,1.974,0.074};
 
     public static String bigInt2base64(BigInteger bigInt) {
@@ -87,24 +88,37 @@ public class BasicCrypto {
                 best_score = score;
                 best_key = (char)(i);
             }
+            //////// QC ////////
+            //System.out.println("" + String.format("%02X", i) + " : " + score);
+            ////////////////////
         }
         return best_key;
     }
 
     // Given ascii text, return a metric that estimates the distance of that text 
     // from the English language.
-    // In it's current implementation, this is simply based on letter frequencies.
+    //
     // Smaller number means more like English.
+    //
+    // In it's current implementation, this is simply based on letter frequencies.
+    // There are additional penalties to the score for things like not the correct
+    // number of expected whitespaces or alphabet characters for English.
     public static double getEnglishMetric(String asciiText) {
         double[] frequencies = new double[ALPHA_SIZE];
         double score = 0;
+        // Used for penalties... see below
+        int whitespaceCount = 0;
+        int alphaCount = 0;
         // A botched way to avoid dividing by zero.
         // This is okay because any strings containing no english letters will have a large (poorer) score
-        double norm = 0.0000001;
+        double norm = 1e-5;
         char[] plaintext = asciiText.toUpperCase().toCharArray();
         for(int k = 0; k < plaintext.length; k++) {
             if ((LETTER_A <= (int)plaintext[k]) && ((int)plaintext[k] < LETTER_A + ALPHA_SIZE)) {
                 frequencies[(int)plaintext[k] - LETTER_A]++;
+                alphaCount++;
+            } else if (plaintext[k] == ' ') {
+                whitespaceCount++;
             }
         }
         for(int k = 0; k < ALPHA_SIZE; k++) {
@@ -113,6 +127,16 @@ public class BasicCrypto {
         for(int k = 0; k < ALPHA_SIZE; k++) {
             score += Math.abs(frequencies[k]/norm - FREQUENCIES_EN[k]/100);
         }
+
+        // Penalty for having not the expected number of spaces
+        double expectedWhitespace = (plaintext.length+1)/(AVG_WORD_SIZE+1);
+        score += Math.abs((whitespaceCount - expectedWhitespace)/(plaintext.length + 1e-5));
+
+        // Penalty for having not the expected number of alphabet characters
+        double expectedAlpha = plaintext.length * AVG_WORD_SIZE/(AVG_WORD_SIZE+1);
+        score += Math.abs((alphaCount - expectedAlpha)/(plaintext.length + 1e-5));
+
+
         return score;
     }
 
